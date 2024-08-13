@@ -315,8 +315,8 @@ _∖_ A B = ⟦ x ∈ A ∥ ¬ x ∈ B ⟧
 ∈-irrefelxive-on-ON {α} ord-α α∈α = ((ordinal-is-irreflexive {α} ord-α) α∈α) α∈α
 
 -- (3)
-∈-has-trichotomy : ∀ {α β} → ordinal α → ordinal β → α ∈ β ∨ β ∈ α ∨ α ≗ β
-∈-has-trichotomy {α} {β} ord-α ord-β =
+∈-has-trichotomy-on-ON : ∀ {α β} → ordinal α → ordinal β → α ∈ β ∨ β ∈ α ∨ α ≗ β
+∈-has-trichotomy-on-ON {α} {β} ord-α ord-β =
     sublemma (equal-equiv (⊆-is-≤ ord-δ ord-α) δ⊆α) (equal-equiv (⊆-is-≤ ord-δ ord-β) δ⊆β)
     where
         δ : 𝕍
@@ -339,3 +339,84 @@ _∖_ A B = ⟦ x ∈ A ∥ ¬ x ∈ B ⟧
         sublemma (ι₂ δ≗α) (ι₁ δ∈β) = ι₁ (ι₁ ((≗-transport (λ x → x ∈ β) δ≗α) δ∈β))
         sublemma (ι₁ δ∈α) (ι₂ δ≗β) = ι₁ (ι₂ ((≗-transport (λ x → x ∈ α) δ≗β) δ∈α)) 
         sublemma (ι₂ δ≗α) (ι₂ δ≗β) = ι₂ (≗-trans (symmP δ≗α) δ≗β)
+        
+-- (4)
+∈-well-founded-on-ON : ∀ {X} → ¬ X ≗ ∅ → (∀ z → z ∈ X → ordinal z) → ∃[ y ∈ 𝕍 ] (y ∈-minimal-in X)
+∈-well-founded-on-ON {X} ¬X≗∅ X⊆ON = sublemma exists-α
+    where
+        exists-α : ∃[ α ∈ 𝕍 ] α ∈ X
+        exists-α = non-empty (¬≗-¬≡ ¬X≗∅)
+        
+        sublemma : ∃[ α ∈ 𝕍 ] α ∈ X → ∃[ y ∈ 𝕍 ] (y ∈-minimal-in X)
+        sublemma (exists α α∈X) with truth (α ∈-minimal-in X)
+        ... | inj₁ yes = exists α (≡-true yes)
+        ... | inj₂ no = exists-ξ-least
+            where
+                Y : 𝕍
+                Y = α ∩ X
+                
+                α∩X-nonempty : ¬ (α ∩ X) ≗ ∅
+                α∩X-nonempty = ∃-to-¬∅ α∩β-nonempty-∃
+                    where
+                        DeMorgan-∧∨ : {P Q : Prop} → ¬ (P ∧ Q) → ¬ P ∨ ¬ Q
+                        DeMorgan-∧∨ {P} {Q} ¬[P∧Q] with truth P | truth Q
+                        ... | inj₁ p | inj₁ q = ex-falso (¬[P∧Q] [ ≡-true p , ≡-true q ] )
+                        ... | _ | inj₂ ¬q = ι₂ (≡-false ¬q)
+                        ... | inj₂ ¬p | _ = ι₁ (≡-false ¬p)
+                        
+                        ¬[P→¬Q]→P∧Q : {P Q : Prop} → ¬(P → ¬ Q) → P ∧ Q
+                        ¬[P→¬Q]→P∧Q {P} {Q} ¬[p→¬q] with truth P | truth Q
+                        ... | inj₁ p | inj₁ q = [ ≡-true p , ≡-true q ]
+                        ... | _ | inj₂ ¬q = ex-falso (¬[p→¬q] (λ p → (≡-false ¬q)))
+                        ... | inj₂ ¬p | _ = ex-falso (¬[p→¬q] (λ p → ex-falso ((≡-false ¬p) p)))
+                        
+                        P→¬P∨Q→Q : {P Q : Prop} → P → ¬ P ∨ Q → Q
+                        P→¬P∨Q→Q p (ι₁ ¬p) = ex-falso (¬p p)
+                        P→¬P∨Q→Q p (ι₂ q) = q
+                        
+                        ¬∃-∀¬ : {P : 𝕍 → Prop} → ¬ (∃[ x ∈ 𝕍 ] P x) → (∀ x → ¬ P x)
+                        ¬∃-∀¬ ¬∃ x Px = ¬∃ (exists x Px)
+                        
+                        ¬¬P→P : {P : Prop} → ¬ ¬ P → P
+                        ¬¬P→P {P} = solve 1 (\ P -> (¡ ¡ P ==> P)) P
+                        
+                        ¬∀-∃¬ : {P : 𝕍 → Prop} → ¬ (∀ x → P x) → ∃[ x ∈ 𝕍 ] ¬ P x
+                        ¬∀-∃¬ {P} ¬∀ with truth (∃[ x ∈ 𝕍 ] ¬ P x)
+                        ... | inj₁ yes = ≡-true yes
+                        ... | inj₂ no = ex-falso (¬∀ (λ x → ¬¬P→P (¬∃-∀¬ (≡-false no) x)))
+                        
+                        lol : ∀ {A B} → A ⊆ B → ∃[ y ∈ 𝕍 ] y ∈ A → ∃[ y ∈ 𝕍 ] y ∈ (A ∩ B)
+                        lol A⊆B (exists y y∈A) = exists y ([ y∈A , A⊆B y∈A ])
+                        
+                        ∃-to-¬∅ : ∀ {A} → ∃[ y ∈ 𝕍 ] y ∈ A → ¬ A ≗ ∅
+                        ∃-to-¬∅ (exists absurd absurd∈∅) refl𝕍 = absurd∈∅
+                        
+                        ∃-prop-transfer : {P Q : Prop} → (P → Q) → ∃[ y ∈ 𝕍 ] P → ∃[ y ∈ 𝕍 ] Q
+                        ∃-prop-transfer p→q (exists y p) = exists y (p→q p)
+                        
+                        ∃-prop-transfer-param : {P Q : 𝕍 → Prop} → {x : 𝕍} → (∀ {x} → P x → Q x) → ∃[ y ∈ 𝕍 ] P x → ∃[ y ∈ 𝕍 ] Q x
+                        ∃-prop-transfer-param px→qx (exists y px) = exists y (px→qx px)
+                        
+                        ∧-comm : {P Q : Prop} → P ∧ Q → Q ∧ P
+                        ∧-comm [ p , q ] = [ q , p ]
+                        
+                        α∩β-nonempty-∃ : ∃[ y ∈ 𝕍 ] y ∈ Y
+                        α∩β-nonempty-∃ =
+                            -- ∃-prop-transfer-param (¬[P→¬Q]→P∧Q) (¬∀-∃¬ {λ y → y ∈ X → ¬ y ∈ α} (P→¬P∨Q→Q (α∈X) (DeMorgan-∧∨ (≡-false no))))
+                            subsublemma (¬∀-∃¬ {λ z → z ∈ X → ¬ z ∈ α} (P→¬P∨Q→Q (α∈X) (DeMorgan-∧∨ (≡-false no))))
+                            where
+                                subsublemma : ∃[ x ∈ 𝕍 ] ¬ (x ∈ X → ¬ x ∈ α) → ∃[ x ∈ 𝕍 ] x ∈ α ∧ x ∈ X
+                                subsublemma (exists x impl) = exists x (∧-comm (¬[P→¬Q]→P∧Q impl))
+                
+                exists-ξ-least : ∃[ ξ ∈ 𝕍 ] ξ ∈-minimal-in X
+                exists-ξ-least = subsublemma (ordinal-is-well-founded {α} (X⊆ON α α∈X) Y α∩X-nonempty (A∩B⊆A {α} {X}))
+                    where
+                        subsublemma : ∃[ ξ ∈ 𝕍 ] ξ ∈-minimal-in Y → ∃[ ξ ∈ 𝕍 ] ξ ∈-minimal-in X
+                        subsublemma (exists ξ [ ξ∈Y , ξ-min ]) =
+                            exists ξ [ π₂ ξ∈Y , ξ-min-in-X ]
+                                where
+                                    ξ-min-in-X : ∀ z → z ∈ X → ¬ z ∈ ξ
+                                    ξ-min-in-X z z∈X z∈ξ = (ξ-min z z∈α∩X) z∈ξ
+                                        where
+                                            z∈α∩X : z ∈ Y
+                                            z∈α∩X = [ ((ordinal-is-transitive-set {α} (X⊆ON α α∈X)) ξ (π₁ ξ∈Y)) z∈ξ , z∈X ]
