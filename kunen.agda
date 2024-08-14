@@ -163,8 +163,8 @@ well-order-⊆-transport {A} {X} wo-A X⊆A = [ total-X , well-founded-X ]
 -- The well-ordering of ON.
 
 -- Lemma I.8.6
-ON-transitive-class : ∀ α → ordinal α → ∀ z → z ∈ α → ordinal z
-ON-transitive-class α ord-α z z∈α =
+ON-transitive-class : ∀ {α} → ordinal α → ∀ {z} → z ∈ α → ordinal z
+ON-transitive-class {α} ord-α {z} z∈α =
     [ trans-set-z , well-ordered-z ]
     where
         z⊆α : z ⊆ α
@@ -420,3 +420,46 @@ _∖_ A B = ⟦ x ∈ A ∥ ¬ x ∈ B ⟧
                                         where
                                             z∈α∩X : z ∈ Y
                                             z∈α∩X = [ ((ordinal-is-transitive-set {α} (X⊆ON α α∈X)) ξ (π₁ ξ∈Y)) z∈ξ , z∈X ]
+
+infix 8 _↔_
+_↔_ : Prop → Prop → Prop
+_↔_ P Q = (P → Q) ∧ (Q → P)
+
+-- Theorem I.8.9
+-- ON is a proper class.
+Burali-Forti-Paradox : ∃[ ON ∈ 𝕍 ] (∀ z → z ∈ ON ↔ ordinal z) → ⊥
+Burali-Forti-Paradox (exists ON all-ords) = (ordinal-is-irreflexive {ON} ON-ordinal) ON∈ON ON∈ON
+    where
+        z∈ON→ord-z : ∀ {z} → z ∈ ON → ordinal z
+        z∈ON→ord-z {z} = π₁ (all-ords z)
+        
+        ord-z→z∈ON : ∀ {z} → ordinal z → z ∈ ON
+        ord-z→z∈ON {z} = π₂ (all-ords z)
+        
+        ON-ordinal : ordinal ON
+        ON-ordinal = [ trans-set-ON , [ [ [ trans-ON , irreflexive-ON ] , trichotomy-on-ON ] , well-founded-ON ] ]
+            where
+                trans-set-ON : transitive-set ON
+                trans-set-ON y y∈ON z∈y = ord-z→z∈ON (ON-transitive-class {y} (z∈ON→ord-z y∈ON) z∈y)
+                
+                irreflexive-ON : ∈-irreflexive ON
+                irreflexive-ON {x} x∈ON = ∈-irrefelxive-on-ON {x} (z∈ON→ord-z x∈ON)
+                
+                trans-ON : ∈-transitive ON
+                trans-ON {x} {y} {z} x∈ON y∈ON z∈ON =
+                    ∈-transitive-on-ON {x} {y} {z} (z∈ON→ord-z x∈ON) (z∈ON→ord-z y∈ON) (z∈ON→ord-z z∈ON)
+                
+                trichotomy-on-ON : ∈-trichotomy ON
+                trichotomy-on-ON {x} {y} x∈ON y∈ON =
+                    ∈-has-trichotomy-on-ON {x} {y} (z∈ON→ord-z x∈ON) (z∈ON→ord-z y∈ON)
+                
+                well-founded-ON : ∈-well-founded ON
+                well-founded-ON X X-nonempty X⊆ON =
+                    ∈-well-founded-on-ON {X} X-nonempty X-full-of-ords
+                        where
+                            X-full-of-ords : ∀ z → z ∈ X → ordinal z
+                            X-full-of-ords z z∈X = z∈ON→ord-z (X⊆ON z∈X)
+                
+        ON∈ON : ON ∈ ON
+        ON∈ON = ord-z→z∈ON  ON-ordinal
+        
